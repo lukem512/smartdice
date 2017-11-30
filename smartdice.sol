@@ -4,7 +4,8 @@ import "github.com/oraclize/ethereum-api/oraclizeAPI.sol";
 contract SmartDice is usingOraclize {
 
     string public lastRoll;
-    event diceRoll(uint value);
+    string public lastPrice;
+    event diceRolled(uint value);
     event message(string description);
 
     function SmartDice() payable {
@@ -14,7 +15,7 @@ contract SmartDice is usingOraclize {
     function __callback(bytes32 myid, string result) {
         if (msg.sender != oraclize_cbAddress()) throw;
         lastRoll = result;
-        diceRoll(parseInt(result));
+        diceRolled(parseInt(lastRoll));
     }
 
     function rollDice() payable {
@@ -26,8 +27,9 @@ contract SmartDice is usingOraclize {
         
         // Sanity check contract balance is sufficient
         if (oraclizePrice > this.balance) {
-            message("Could not retrieve random number, please add some ETH to cover for the query fee");
+            message("Could not retrieve random number, please add some ETH to cover the query fee");
         } else {
+            lastPrice = uint2str(oraclizePrice);
             message("Rolling the dice...");
             oraclize_query("WolframAlpha", "random number between 1 and 6");
         }
