@@ -1,0 +1,240 @@
+<!doctype>
+<html>
+  <head>
+    <!--
+      SMARTDICE UI
+      Luke Mitchell <hi@lukemitchell.co>
+    -->
+
+    <title>SMARTDICE</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=1.0, minimum-scale=1.0, maximum-scale=1.0">
+
+    <!-- Libraries -->
+    <script type="text/javascript" src="lib/bignumber.js"></script>
+    <script type="text/javascript" src="lib/web3.js"></script>
+
+    <!-- Local JavaScript files -->
+    <script type="text/javascript" src="./src/contract.js"></script>
+
+    <style>
+      @media screen and (min-width: 1px) {
+        body {
+          background-image: url(img/blocks-640.jpg);
+        }
+      }
+
+      @media screen and (min-width: 640px) {
+        body {
+          background-image: url(img/blocks-1024.jpg);
+        }
+      }
+
+      @media screen and (min-width: 1024px) {
+        body {
+          background-image: url(img/blocks-1600.jpg);
+        }
+      }
+
+      @media screen and (min-width: 1600px) {
+        body {
+          background-image: url(img/blocks-2048.jpg);
+        }
+      }
+
+      @media screen and (min-width: 2048px) {
+        body {
+          background-image: url(img/blocks-2880.jpg);
+        }
+      }
+
+      @media screen and (min-width: 2880px) {
+        body {
+          background-image: url(img/blocks-4000.jpg);
+        }
+      }
+
+      body {
+        margin: 0;
+        font-family: 'Roboto', sans-serif;
+        font-weight: 300;
+        background-color: #ddd;
+        background-repeat: no-repeat;
+        background-size: cover;
+      }
+
+      h1 {
+        margin: 0;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      button {
+        width: 30%;
+        min-width: 150px;
+        padding: 0.4em;
+        background-color: rgba(0, 140, 0, 0.6);
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 1.5em;
+        border-radius: 0.4em;
+        border: none;
+        border-right: 0.1em solid rgba(0, 0, 0, 0.5);
+        border-bottom: 0.1em solid rgba(0, 0, 0, 0.5);
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+      }
+
+      button:hover {
+        background-color: rgba(0, 140, 0, 0.9);
+        color: white;
+      }
+
+      button:disabled, button[disabled] {
+        cursor: not-allowed;
+        background-color: rgba(140, 0, 0, 0.7);
+      }
+
+      footer {
+        position: absolute;
+        bottom: 0;
+        text-align: center;
+        margin: 0 auto;
+        width: 100%;
+      }
+
+      .container {
+        margin: 8% auto;
+        padding: 1em;
+        width: 50%;
+        min-width: 200px;
+        text-align: center;
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 0.4em;
+        border-right: 0.2em solid rgba(0, 0, 0, 0.5);
+        border-bottom: 0.2em solid rgba(0, 0, 0, 0.5);
+      }
+
+      .die {
+        background-color: rgba(255, 255, 255, 0.6);
+        border-radius: 1em;
+        width: 5.5em;
+        height: 5.5em;
+        margin: 1em auto;
+      }
+
+      #roll {
+        font-size: 4em;
+      }
+    </style>
+
+    <!-- Application code -->
+    <script type="text/javascript">
+      var Web3 = require('web3');
+      var web3 = new Web3();
+
+      // User-defined variabled
+      var CONTRACT_ABI_JSON = './abi.json';
+      var CONTRACT_ADDRESS = '0xC0c71419dDBdBAbA6a577103c36fc3f188ea9Ed8';
+
+      // Internal variables
+      var _connected;
+      var _diceContract;
+
+      // Set provider
+      if (typeof web3 !== 'undefined' && web3.currentProvider) {
+        web3 = new Web3(web3.currentProvider);
+      } else {
+        web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+      }
+
+      window.onload = async function() {
+        // Begin polling for connection
+        _updateConnectionUI();
+
+        // Set default address
+        web3.eth.defaultAccount = web3.eth.accounts[0];
+        console.log('Setting default account', web3.eth.defaultAccount)
+
+        // Retrieve contract
+        _diceContract = await retrieveContract({
+          abiPath: CONTRACT_ABI_JSON,
+          address: CONTRACT_ADDRESS
+        });
+
+        console.log(_diceContract)
+        _updateRoll(_diceContract.lastRoll())
+      };
+
+      function _updateConnectionUI() {
+        var newConnectedState = web3.isConnected();
+        if (typeof _connected === 'undefined' || newConnectedState !== _connected) {
+          console.log('Setting connected state', newConnectedState);
+          _connected = newConnectedState;
+        }
+        setTimeout(_updateConnectionUI, 5000);
+      }
+
+      function _rollDice() {
+        if (!_connected || !_diceContract) {
+          return;
+        }
+
+        // Set the state to loading
+        _updateRoll('...');
+        _setButtonState(true);
+
+        // Call the rollDice function
+        _diceContract.rollDice({value: web3.toWei(0.04, 'ether')},
+          function(err, res) {
+            if (err) {
+              return console.error('rollDice error', err);
+            }
+            console.log('rollDice success', res)
+          }
+        );
+
+        // Watch for response
+        _diceContract.diceRolled(null, "latest",
+          function(err, res) {
+            if (err) {
+              return console.error('diceRolled event error', err);
+            }
+            const newRoll = res.args.value.toNumber();
+            _updateRoll(newRoll);
+            _setButtonState(false);
+          }
+        );
+      }
+
+      function _updateRoll(roll) {
+        console.log('Updating roll', roll)
+        document.getElementById('roll').innerText = roll;
+      }
+
+      function _setButtonState(rolling) {
+        var buttonElem = document.getElementById('rollButton');
+        if (rolling) {
+          buttonElem.innerText = 'Rolling...';
+          buttonElem.disabled = true;
+        } else {
+          buttonElem.innerText = 'Roll';
+          buttonElem.disabled = false;
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <h1>SmartDice</h1>
+      <div class="die">
+        <span id="roll">...</span>
+      </div>
+      <button id="rollButton" type="button" onclick="_rollDice()">Roll</button>
+    </div>
+    <footer>
+      <p>This dapp interacts with the <a href="https://github.com/lukem512/smartdice" title="SMARTDICE on GitHub" target="_blank">SMARTDICE</a> smart contract.</p>
+    </footer>
+  </body>
+</html>
