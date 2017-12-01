@@ -1,4 +1,4 @@
-# SmartDice
+# SMARTDICE
 
 A die smart contract that runs on the Ethereum Virtual Machine. The die will roll a random number between 1 and 6, as determined by [WolframAlpha](https://www.wolframalpha.com) via [Oraclize](http://www.oraclize.it/).
 
