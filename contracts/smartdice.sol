@@ -5,11 +5,12 @@ contract SmartDice is usingOraclize {
 
     string public lastRoll;
     string public lastPrice;
+    address owner;
     event diceRolled(uint value);
-    event message(string description);
 
     function SmartDice() payable {
         rollDice();
+        owner = msg.sender;
     }
 
     function __callback(bytes32 myid, string result) {
@@ -18,20 +19,40 @@ contract SmartDice is usingOraclize {
         diceRolled(parseInt(lastRoll));
     }
 
-    function rollDice() payable {
+    function rollDice() payable returns (bool) {
         // Retrieve price for oraclize query
         uint oraclizePrice = oraclize_getPrice("WolframAlpha");
-        
-        // Throw if not covered by the sender
-        if (msg.value < oraclizePrice) throw;
-        
-        // Sanity check contract balance is sufficient
-        if (oraclizePrice > this.balance) {
-            message("Could not retrieve random number, please add some ETH to cover the query fee");
-        } else {
-            lastPrice = uint2str(oraclizePrice);
-            message("Rolling the dice...");
-            oraclize_query("WolframAlpha", "random number between 1 and 6");
+
+        // Check the price is covered by the transaction
+        if (msg.value < oraclizePrice) {
+          return false;
         }
+
+        // Update last lastPrice
+        lastPrice = uint2str(oraclizePrice);
+
+        // Call WolframAlpha via Oraclize to roll the dice
+        oraclize_query("WolframAlpha", "random number between 1 and 6");
+
+        return true;
+    }
+
+    function withdraw(uint amount) returns (bool) {
+        // Only the owner may withdraw
+        if (msg.sender != owner) {
+            return false;
+        }
+
+        // Sanity check balance
+        if (amount > this.balance) {
+            return false;
+        }
+
+        // Try to send, throw if
+        if (!msg.sender.send(amount)) {
+            return false;
+        }
+
+        return true;
     }
 }

@@ -35,6 +35,25 @@
     "constant": false,
     "inputs": [
       {
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "withdraw",
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
         "name": "myid",
         "type": "bytes32"
       },
@@ -57,7 +76,12 @@
     "constant": false,
     "inputs": [],
     "name": "rollDice",
-    "outputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool"
+      }
+    ],
     "payable": true,
     "stateMutability": "payable",
     "type": "function"
@@ -92,18 +116,6 @@
       }
     ],
     "name": "diceRolled",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "name": "description",
-        "type": "string"
-      }
-    ],
-    "name": "message",
     "type": "event"
   }
 ]
