@@ -136,7 +136,7 @@
 
       // User-defined variabled
       var CONTRACT_ABI_JSON = './abi.json';
-      var CONTRACT_ADDRESS = '0xC0c71419dDBdBAbA6a577103c36fc3f188ea9Ed8';
+      var CONTRACT_ADDRESS = '0x3f612b066144b58b393FB3c5522fAC13C2ff779A';
 
       // Internal variables
       var _connected;
@@ -163,8 +163,10 @@
           address: CONTRACT_ADDRESS
         });
 
-        console.log(_diceContract)
-        _updateRoll(_diceContract.lastRoll())
+        console.log(_diceContract);
+
+        // Display a random roll to begin
+        _updateRoll(Math.floor((Math.random() * 6) + 1));
       };
 
       function _updateConnectionUI() {
@@ -185,8 +187,11 @@
         _updateRoll('...');
         _setButtonState(true);
 
+        // TODO: get accurate price using _diceContract.getPrice
+        var rollCost = web3.toWei(0.005, 'ether');
+
         // Call the rollDice function
-        _diceContract.rollDice({value: web3.toWei(0.04, 'ether')},
+        _diceContract.rollDice({value: rollCost},
           function(err, res) {
             if (err) {
               return console.error('rollDice error', err);
@@ -194,6 +199,9 @@
             console.log('rollDice success', res)
           }
         );
+
+        // TODO: retrieve the `id` returned by `rollDice`
+        // and use this as a filter on the `diceRolled` event
 
         // Watch for response
         _diceContract.diceRolled(null, "latest",

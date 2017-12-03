@@ -1,40 +1,37 @@
+// SMARTDICE
+// Luke Mitchell <hi@lukemitchell.co>
+
 pragma solidity ^0.4.11;
 import "github.com/oraclize/ethereum-api/oraclizeAPI.sol";
 
 contract SmartDice is usingOraclize {
 
-    string public lastRoll;
-    string public lastPrice;
     address owner;
-    event diceRolled(uint value);
+    event diceRolled(bytes32 id, uint value);
 
     function SmartDice() payable {
         rollDice();
         owner = msg.sender;
     }
 
-    function __callback(bytes32 myid, string result) {
+    function __callback(bytes32 id, string value) {
         if (msg.sender != oraclize_cbAddress()) throw;
-        lastRoll = result;
-        diceRolled(parseInt(lastRoll));
+        diceRolled(id, parseInt(value));
     }
 
-    function rollDice() payable returns (bool) {
+    function getPrice() returns (uint) {
         // Retrieve price for oraclize query
-        uint oraclizePrice = oraclize_getPrice("WolframAlpha");
+        return oraclize_getPrice("WolframAlpha");
+    }
 
+    function rollDice() payable returns (bytes32) {
         // Check the price is covered by the transaction
-        if (msg.value < oraclizePrice) {
-          return false;
+        if (msg.value < getPrice()) {
+          throw;
         }
 
-        // Update last lastPrice
-        lastPrice = uint2str(oraclizePrice);
-
         // Call WolframAlpha via Oraclize to roll the dice
-        oraclize_query("WolframAlpha", "random number between 1 and 6");
-
-        return true;
+        return oraclize_query("WolframAlpha", "random number between 1 and 6");
     }
 
     function withdraw(uint amount) returns (bool) {

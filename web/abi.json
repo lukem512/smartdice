@@ -1,27 +1,13 @@
 [
   {
-    "constant": true,
-    "inputs": [],
-    "name": "lastPrice",
-    "outputs": [
-      {
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "constant": false,
     "inputs": [
       {
-        "name": "myid",
+        "name": "id",
         "type": "bytes32"
       },
       {
-        "name": "result",
+        "name": "value",
         "type": "string"
       }
     ],
@@ -79,7 +65,7 @@
     "outputs": [
       {
         "name": "",
-        "type": "bool"
+        "type": "bytes32"
       }
     ],
     "payable": true,
@@ -87,17 +73,17 @@
     "type": "function"
   },
   {
-    "constant": true,
+    "constant": false,
     "inputs": [],
-    "name": "lastRoll",
+    "name": "getPrice",
     "outputs": [
       {
         "name": "",
-        "type": "string"
+        "type": "uint256"
       }
     ],
     "payable": false,
-    "stateMutability": "view",
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -109,6 +95,11 @@
   {
     "anonymous": false,
     "inputs": [
+      {
+        "indexed": false,
+        "name": "id",
+        "type": "bytes32"
+      },
       {
         "indexed": false,
         "name": "value",
