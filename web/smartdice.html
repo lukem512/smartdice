@@ -104,6 +104,14 @@
         width: 100%;
       }
 
+      footer a {
+        color: rgba(0, 140, 0, 0.6);
+      }
+
+      footer a:hover {
+        color: rgba(0, 140, 0, 0.9);
+      }
+
       .container {
         margin: 8% auto;
         padding: 1em;
@@ -127,12 +135,16 @@
       #roll {
         font-size: 4em;
       }
+
+      #unlockMessage {
+        display: none;
+      }
     </style>
 
     <!-- Application code -->
     <script type="text/javascript">
       var Web3 = require('web3');
-      var web3 = new Web3();
+      var web3;
 
       // User-defined variabled
       var CONTRACT_ABI_JSON = './abi.json';
@@ -141,6 +153,9 @@
       // Internal variables
       var _connected;
       var _diceContract;
+
+      // UI variables
+      var _buttonElem;
 
       // Set provider
       if (typeof web3 !== 'undefined' && web3.currentProvider) {
@@ -151,11 +166,14 @@
 
       window.onload = async function() {
         // Begin polling for connection
-        _updateConnectionUI();
+        _updateConnectionLoop();
 
-        // Set default address
-        web3.eth.defaultAccount = web3.eth.accounts[0];
-        console.log('Setting default account', web3.eth.defaultAccount)
+        // Begin polling for default account
+        _updateAccountLoop();
+
+        // Store element DOM objects
+        _buttonElem = document.getElementById('rollButton');
+        _unlockMessageElem = document.getElementById('unlockMessage');
 
         // Retrieve contract
         _diceContract = await retrieveContract({
@@ -163,23 +181,41 @@
           address: CONTRACT_ADDRESS
         });
 
-        console.log(_diceContract);
-
         // Display a random roll to begin
         _updateRoll(Math.floor((Math.random() * 6) + 1));
       };
 
-      function _updateConnectionUI() {
+      // Loop and track the connection status
+      function _updateConnectionLoop() {
         var newConnectedState = web3.isConnected();
         if (typeof _connected === 'undefined' || newConnectedState !== _connected) {
           console.log('Setting connected state', newConnectedState);
           _connected = newConnectedState;
         }
-        setTimeout(_updateConnectionUI, 5000);
+        setTimeout(_updateConnectionLoop, 5000);
+      }
+
+      // Loops until an account becomes available
+      // This may not be possible until MetaMask has been unlocked
+      function _updateAccountLoop() {
+        web3.eth.getAccounts(function(err, accounts){
+          if (err) {
+            return console.error('Unable to retrieve accounts', err);
+          }
+          if (accounts.length === 0) {
+            _unlockMessageElem.style.display = 'block';
+            setTimeout(_updateAccountLoop, 5000);
+          } else {
+            web3.eth.defaultAccount = accounts[0];
+            _unlockMessageElem.style.display = 'none';
+            _buttonElem.disabled = false;
+            console.log('Setting default account', web3.eth.defaultAccount);
+          }
+        });
       }
 
       function _rollDice() {
-        if (!_connected || !_diceContract) {
+        if (!_connected || !_diceContract || !web3.eth.defaultAccount) {
           return;
         }
 
@@ -188,15 +224,16 @@
         _setButtonState(true);
 
         // TODO: get accurate price using _diceContract.getPrice
+        // This is an additional transaction
         var rollCost = web3.toWei(0.005, 'ether');
 
         // Call the rollDice function
         _diceContract.rollDice({value: rollCost},
-          function(err, res) {
+          function(err, txid) {
             if (err) {
               return console.error('rollDice error', err);
             }
-            console.log('rollDice success', res)
+            console.log('rollDice success', txid)
           }
         );
 
@@ -239,7 +276,10 @@
       <div class="die">
         <span id="roll">...</span>
       </div>
-      <button id="rollButton" type="button" onclick="_rollDice()">Roll</button>
+      <div class="message" id="unlockMessage">
+        <p>No account was detected. If you are using MetaMask, please unlock it to continue.</p>
+      </div>
+      <button id="rollButton" type="button" onclick="_rollDice()" disabled>Roll</button>
     </div>
     <footer>
       <p>This dapp interacts with the <a href="https://github.com/lukem512/smartdice" title="SMARTDICE on GitHub" target="_blank">SMARTDICE</a> smart contract.</p>
