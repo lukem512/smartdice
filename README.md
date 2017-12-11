@@ -2,7 +2,7 @@
 
 A dice dapp that runs on the Ethereum Virtual Machine. The die will roll a random number between 1 and 6, as determined by [WolframAlpha](https://www.wolframalpha.com) via [Oraclize](http://www.oraclize.it/).
 
-<img src="https://i.imgur.com/JT3BpDz.png" />
+<p align="center"><img src="https://i.imgur.com/JT3BpDz.png" width="500" /></p>
 
 ### Usage
 
